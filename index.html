@@ -1,178 +1,1864 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestão Clínica - Painel Evolução</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>BTX • Gestão Profissional (Dashboard + Caixa + Materiais + Equipamentos + Agenda + Planejamento)</title>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <style>
+    :root{
+      --bg:#0b1220;
+      --panel:#0f1a2f;
+      --panel2:#0c162a;
+      --stroke: rgba(255,255,255,.10);
+      --stroke2: rgba(255,255,255,.16);
+      --txt: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --muted2: rgba(255,255,255,.52);
+      --ok:#22c55e;
+      --bad:#ef4444;
+      --warn:#f59e0b;
+      --info:#60a5fa;
+      --accent:#3b82f6;
+      --accent2:#06b6d4;
+      --shadow: 0 18px 50px rgba(0,0,0,.45);
+      --radius: 18px;
+      --radius2: 14px;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
 
-<style>
-body {
-    margin: 0;
-    font-family: 'Segoe UI', sans-serif;
-    background: #f4f7fb;
-}
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--txt);
+      background:
+        radial-gradient(900px 520px at 20% -10%, rgba(59,130,246,.22), transparent 60%),
+        radial-gradient(900px 520px at 95% 10%, rgba(6,182,212,.18), transparent 55%),
+        linear-gradient(135deg, #070b14, #0b1220 40%, #061021);
+      min-height:100vh;
+    }
 
-header {
-    background: #0d47a1;
-    color: white;
-    padding: 15px;
-    text-align: center;
-    font-size: 20px;
-}
+    .wrap{max-width:1250px;margin:0 auto;padding:18px 14px 80px}
+    header{
+      display:flex;gap:14px;align-items:center;justify-content:space-between;
+      padding:14px 16px;border:1px solid var(--stroke);border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.02));
+      box-shadow: var(--shadow);
+      position:sticky;top:10px;z-index:50;backdrop-filter: blur(10px);
+    }
+    .brand{display:flex;gap:12px;align-items:center}
+    .logo{
+      width:46px;height:46px;border-radius:14px;
+      background:
+        radial-gradient(14px 14px at 30% 30%, rgba(255,255,255,.55), transparent 60%),
+        linear-gradient(135deg, rgba(59,130,246,.95), rgba(6,182,212,.85));
+      box-shadow: 0 14px 32px rgba(59,130,246,.25);
+      border:1px solid rgba(255,255,255,.22);
+      position:relative;
+    }
+    .logo:after{
+      content:""; position:absolute; inset:12px;
+      border-radius:10px;border:1px dashed rgba(255,255,255,.35);opacity:.55;
+    }
+    .title{display:flex;flex-direction:column;line-height:1.1}
+    .title b{font-size:15px;letter-spacing:.2px}
+    .title span{font-size:12px;color:var(--muted)}
+    .top-actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
 
-.container {
-    padding: 20px;
-}
+    button, .btn, select, input, textarea{
+      border:1px solid var(--stroke2);
+      background: rgba(255,255,255,.03);
+      color: var(--txt);
+      padding:10px 12px;
+      border-radius: 14px;
+      outline:none;
+      transition: transform .12s ease, background .12s ease, border-color .12s ease;
+      font-weight:600;
+      letter-spacing:.2px;
+      font-family: var(--sans);
+    }
+    textarea{font-weight:500}
+    button, .btn{cursor:pointer;display:inline-flex;gap:8px;align-items:center;user-select:none}
+    button:hover, .btn:hover{transform: translateY(-1px); background: rgba(255,255,255,.06); border-color: rgba(255,255,255,.24)}
+    button.primary{background: linear-gradient(135deg, rgba(59,130,246,.95), rgba(6,182,212,.75)); border-color: rgba(255,255,255,.18)}
+    button.danger{background: rgba(239,68,68,.14); border-color: rgba(239,68,68,.28)}
+    button.mini{padding:8px 10px;border-radius:12px;font-size:12px}
+    .tag{
+      display:inline-flex;align-items:center;gap:8px;
+      padding:8px 10px;border-radius: 999px;border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      font-size:12px;color:var(--muted);
+    }
 
-.card {
-    background: white;
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 12px;
-    box-shadow: 0px 3px 8px rgba(0,0,0,0.08);
-}
+    .layout{
+      display:grid;
+      grid-template-columns: 260px 1fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    @media (max-width: 980px){
+      header{position:relative;top:auto}
+      .layout{grid-template-columns:1fr}
+    }
 
-input, textarea, button {
-    padding: 8px;
-    margin: 5px 0;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-}
+    .panel{
+      border:1px solid var(--stroke);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.015));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panel .hd{
+      padding:12px 14px;
+      border-bottom:1px solid var(--stroke);
+      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+    }
+    .panel .hd .h{display:flex;flex-direction:column;gap:2px}
+    .panel .hd .h b{font-size:14px}
+    .panel .hd .h span{font-size:12px;color:var(--muted)}
+    .panel .bd{padding:14px}
 
-button {
-    background: #1565c0;
-    color: white;
-    border: none;
-    cursor: pointer;
-}
+    .nav{
+      display:flex;flex-direction:column;gap:10px;
+      padding:12px;
+    }
+    .nav button{
+      justify-content:flex-start;
+      background: rgba(0,0,0,.12);
+      border:1px solid rgba(255,255,255,.10);
+      padding:11px 12px;
+    }
+    .nav button.active{
+      background: linear-gradient(135deg, rgba(59,130,246,.25), rgba(6,182,212,.18));
+      border-color: rgba(59,130,246,.45);
+    }
 
-button:hover {
-    background: #0d47a1;
-}
+    .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    @media (max-width: 980px){ .grid2,.grid3{grid-template-columns:1fr} }
 
-textarea {
-    width: 100%;
-    height: 120px;
-}
-</style>
+    .card{
+      border:1px solid var(--stroke);
+      border-radius: 16px;
+      padding:12px;
+      background: rgba(0,0,0,.14);
+    }
+    .k{font-size:12px;color:var(--muted)}
+    .v{font-size:18px;font-weight:800;margin-top:6px;letter-spacing:.2px}
+
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    .form{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .form .full{grid-column:1/-1}
+
+    .hr{height:1px;background: var(--stroke);margin:14px 0}
+    .hint{font-size:12px;color:var(--muted2);margin-top:8px}
+
+    .tbl{
+      width:100%;
+      border-collapse: collapse;
+      border-radius: 14px;
+      border:1px solid var(--stroke);
+      background: rgba(0,0,0,.14);
+      overflow:hidden;
+    }
+    .tbl th,.tbl td{
+      padding:10px;
+      border-bottom:1px solid rgba(255,255,255,.08);
+      font-size:12px;
+      vertical-align:top;
+    }
+    .tbl th{color: var(--muted); font-weight:800; text-align:left; background: rgba(255,255,255,.02)}
+    .tbl tr:last-child td{border-bottom:none}
+
+    .pill{
+      display:inline-flex;align-items:center;gap:6px;
+      padding:6px 10px;border-radius:999px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.03);
+      font-size:12px;color: var(--muted);
+      white-space:nowrap;
+    }
+    .pill.ok{border-color: rgba(34,197,94,.35); background: rgba(34,197,94,.10); color: rgba(203,255,225,.92)}
+    .pill.bad{border-color: rgba(239,68,68,.35); background: rgba(239,68,68,.10); color: rgba(255,214,214,.92)}
+    .pill.warn{border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.10); color: rgba(255,239,204,.92)}
+
+    canvas{
+      width:100%;
+      height:260px;
+      background: rgba(0,0,0,.16);
+      border:1px solid var(--stroke);
+      border-radius: 16px;
+    }
+
+    .hide{display:none !important}
+
+    /* PRINT / PDF */
+    .print-only{display:none}
+    @media print{
+      body{background:#fff;color:#111}
+      header, .sidebar, .hide-in-print{display:none !important}
+      .wrap{max-width:none;padding:0}
+      .layout{grid-template-columns:1fr;margin:0}
+      .panel{box-shadow:none;border:0;border-radius:0;background:#fff}
+      .panel .hd{border-bottom:1px solid #ddd}
+      .panel .bd{padding:10px 14px}
+      canvas{border:1px solid #ddd;background:#fff}
+      .tbl{border:1px solid #ddd;background:#fff}
+      .tbl th{background:#f4f4f4;color:#333}
+      .tbl td{border-bottom:1px solid #eee;color:#111}
+      .pill{border-color:#ddd;background:#f7f7f7;color:#333}
+      .pill.ok{border-color:#bfe9cf;background:#eaf8f0}
+      .pill.bad{border-color:#f0b9b9;background:#fdecec}
+      .pill.warn{border-color:#f1d1a4;background:#fff5e6}
+      .print-only{display:block}
+      .print-header{padding:14px 14px 8px;border-bottom:1px solid #ddd;margin-bottom:10px}
+      .print-header h1{margin:0;font-size:18px}
+      .print-header p{margin:6px 0 0;color:#555;font-size:12px}
+    }
+  </style>
 </head>
+
 <body>
+<div class="wrap">
 
-<header>Painel de Gestão Clínica</header>
+  <header class="hide-in-print">
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div class="title">
+        <b>BTX • Gestão Profissional</b>
+        <span>Dashboard + Caixa + Materiais + Equipamentos + Agenda + Planejamento • tudo salvo no aparelho</span>
+      </div>
+    </div>
+    <div class="top-actions">
+      <span class="tag">🗓️ <span id="nowTag">—</span></span>
+      <button class="primary" id="btnPrint">🧾 Gerar PDF</button>
+      <button id="btnBackup">💾 Backup</button>
+      <button id="btnRestore">📥 Restaurar</button>
+      <button class="danger" id="btnWipe">🧨 Zerar</button>
+    </div>
+  </header>
 
-<div class="container" id="conteudoPDF">
+  <div class="layout">
 
-<div class="card">
-<h3>Registrar Entrada</h3>
-<input type="date" id="data">
-<input type="number" id="valor" placeholder="Valor">
-<button onclick="adicionarEntrada()">Adicionar</button>
-</div>
+    <!-- SIDEBAR -->
+    <aside class="panel sidebar hide-in-print">
+      <div class="hd">
+        <div class="h">
+          <b>Áreas</b>
+          <span>clique e navegue</span>
+        </div>
+      </div>
+      <div class="nav bd">
+        <button class="active" data-tab="dash">📊 Dashboard</button>
+        <button data-tab="cash">💰 Caixa & Gastos</button>
+        <button data-tab="stock">📦 Materiais / Estoque</button>
+        <button data-tab="equip">🛠 Equipamentos</button>
+        <button data-tab="agenda">📅 Agenda</button>
+        <button data-tab="plan">🧠 Planejamento</button>
+      </div>
+    </aside>
 
-<div class="card">
-<h3>Gráfico de Evolução</h3>
-<canvas id="grafico"></canvas>
-</div>
+    <!-- MAIN -->
+    <main>
 
-<div class="card">
-<h3>Agenda</h3>
-<input type="date" id="agendaData">
-<input type="text" id="agendaTexto" placeholder="Descrição">
-<button onclick="adicionarAgenda()">Adicionar</button>
-<ul id="listaAgenda"></ul>
-</div>
+      <!-- DASHBOARD -->
+      <section class="panel" id="tab-dash">
+        <div class="hd">
+          <div class="h">
+            <b>Dashboard de Evolução</b>
+            <span>faturamento, gastos, lucro, estoque crítico e evolução mensal</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div style="min-width:180px">
+              <label>Período</label>
+              <select id="filterRange">
+                <option value="30">Últimos 30 dias</option>
+                <option value="90">Últimos 90 dias</option>
+                <option value="180">Últimos 180 dias</option>
+                <option value="365">Últimos 12 meses</option>
+                <option value="all">Tudo</option>
+              </select>
+            </div>
+            <button class="mini" id="btnSeed">⚡ Inserir exemplo</button>
+          </div>
+        </div>
 
-<div class="card">
-<h3>Bloco de Notas</h3>
-<textarea id="notas" placeholder="Anotações, metas, objetivos..."></textarea>
-<button onclick="salvarNotas()">Salvar Notas</button>
-</div>
+        <div class="bd">
+          <div class="grid3">
+            <div class="card">
+              <div class="k">Faturamento</div>
+              <div class="v" id="kpiRev">R$ 0,00</div>
+              <div class="hint" id="kpiRevHint">—</div>
+            </div>
+            <div class="card">
+              <div class="k">Gastos</div>
+              <div class="v" id="kpiExp">R$ 0,00</div>
+              <div class="hint" id="kpiExpHint">—</div>
+            </div>
+            <div class="card">
+              <div class="k">Lucro estimado</div>
+              <div class="v" id="kpiProfit">R$ 0,00</div>
+              <div class="hint" id="kpiProfitHint">—</div>
+            </div>
+          </div>
 
-</div>
+          <div class="grid3" style="margin-top:10px">
+            <div class="card">
+              <div class="k">Atendimentos (agenda)</div>
+              <div class="v" id="kpiAppts">0</div>
+              <div class="hint">inclui confirmado/realizado/aguardando/faltou</div>
+            </div>
+            <div class="card">
+              <div class="k">Taxa de faltas</div>
+              <div class="v" id="kpiNoShow">0%</div>
+              <div class="hint">faltou ÷ total do período</div>
+            </div>
+            <div class="card">
+              <div class="k">Estoque crítico</div>
+              <div class="v" id="kpiLow">0 itens</div>
+              <div class="hint">aba “Materiais” mostra em detalhe</div>
+            </div>
+          </div>
 
-<div style="padding:20px;">
-<button onclick="gerarPDF()">Gerar PDF</button>
+          <div class="grid2" style="margin-top:14px">
+            <div>
+              <div class="k" style="margin:0 0 8px 4px">📈 Evolução (mensal): faturamento x gastos x lucro</div>
+              <canvas id="chartLine" width="900" height="260"></canvas>
+            </div>
+            <div>
+              <div class="k" style="margin:0 0 8px 4px">📊 Gastos por categoria (top)</div>
+              <canvas id="chartCats" width="900" height="260"></canvas>
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:14px">
+            <div>
+              <div class="k" style="margin:0 0 8px 4px">💳 Mix de pagamentos (entradas)</div>
+              <canvas id="chartPay" width="900" height="260"></canvas>
+            </div>
+            <div class="card" style="height:260px;display:flex;flex-direction:column;justify-content:space-between">
+              <div>
+                <div class="k">Resumo “gestor”</div>
+                <div class="hint" id="mgrSummary" style="margin-top:8px">—</div>
+              </div>
+              <div class="hint">Meta: medir, ajustar, repetir. Gestão é isso aqui.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- CAIXA -->
+      <section class="panel hide" id="tab-cash">
+        <div class="hd">
+          <div class="h">
+            <b>Caixa & Gastos</b>
+            <span>entrada/saída + categoria + relatório</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="mini" id="btnExportCSV">⬇️ Exportar CSV</button>
+          </div>
+        </div>
+
+        <div class="bd">
+          <div class="grid2">
+            <div class="panel" style="box-shadow:none">
+              <div class="hd">
+                <div class="h">
+                  <b>Lançamento</b>
+                  <span>alimenta os gráficos automaticamente</span>
+                </div>
+              </div>
+              <div class="bd">
+                <form id="formCash" class="form" autocomplete="off">
+                  <div>
+                    <label>Tipo</label>
+                    <select id="cashType" required>
+                      <option value="in">Entrada</option>
+                      <option value="out">Saída</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>Data</label>
+                    <input id="cashDate" type="date" required/>
+                  </div>
+                  <div>
+                    <label>Valor (R$)</label>
+                    <input id="cashValue" type="number" step="0.01" min="0" placeholder="Ex: 250" required/>
+                  </div>
+                  <div>
+                    <label>Forma</label>
+                    <select id="cashPay">
+                      <option>Pix</option><option>Cartão</option><option>Dinheiro</option><option>Convênio</option><option>Outro</option>
+                    </select>
+                  </div>
+                  <div class="full">
+                    <label>Categoria (obrigatório pra gestão ficar “cheia”)</label>
+                    <input id="cashCat" placeholder="Ex: Material, Aluguel, Folha, Marketing, Procedimento..." required/>
+                  </div>
+                  <div class="full">
+                    <label>Descrição</label>
+                    <input id="cashDesc" placeholder="Ex: compra resina, consulta, conta de luz..."/>
+                  </div>
+                  <div class="full" style="display:flex;gap:10px;justify-content:space-between;align-items:center">
+                    <button class="primary" type="submit">➕ Lançar</button>
+                    <span class="hint">Dica: saída de “Material” ajuda a ver custo real.</span>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <div class="panel" style="box-shadow:none">
+              <div class="hd">
+                <div class="h">
+                  <b>Resumo do Caixa</b>
+                  <span>saldo e distribuição</span>
+                </div>
+              </div>
+              <div class="bd">
+                <div class="grid3">
+                  <div class="card"><div class="k">Entradas</div><div class="v" id="cashIn">R$ 0,00</div></div>
+                  <div class="card"><div class="k">Saídas</div><div class="v" id="cashOut">R$ 0,00</div></div>
+                  <div class="card"><div class="k">Saldo</div><div class="v" id="cashBal">R$ 0,00</div></div>
+                </div>
+                <div class="hr"></div>
+                <div class="k">Categorias que mais “comem” teu dinheiro</div>
+                <div class="hint" id="topCats">—</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="k" id="cashSummary">—</div>
+          <div style="overflow:auto;margin-top:10px">
+            <table class="tbl" id="cashTable">
+              <thead>
+                <tr>
+                  <th>Data</th><th>Tipo</th><th>Valor</th><th>Forma</th><th>Categoria</th><th>Descrição</th><th>Ação</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ESTOQUE -->
+      <section class="panel hide" id="tab-stock">
+        <div class="hd">
+          <div class="h">
+            <b>Materiais / Estoque</b>
+            <span>o que tem, o que falta, mínimo, custo e compras</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="mini" id="btnRecalcStock">🔄 Recalcular custo</button>
+          </div>
+        </div>
+
+        <div class="bd">
+          <div class="grid2">
+            <div class="panel" style="box-shadow:none">
+              <div class="hd">
+                <div class="h">
+                  <b>Cadastrar material</b>
+                  <span>controle real (quantidade + mínimo + custo)</span>
+                </div>
+              </div>
+              <div class="bd">
+                <form id="formStock" class="form" autocomplete="off">
+                  <div class="full">
+                    <label>Material</label>
+                    <input id="stName" placeholder="Ex: Resina A2, Anestésico, Fio de sutura..." required/>
+                  </div>
+                  <div>
+                    <label>Categoria</label>
+                    <input id="stCat" placeholder="Ex: Resina, Anestesia, Instrumental..." />
+                  </div>
+                  <div>
+                    <label>Fornecedor (opcional)</label>
+                    <input id="stSupplier" placeholder="Ex: Depósito X" />
+                  </div>
+                  <div>
+                    <label>Qtd atual</label>
+                    <input id="stQty" type="number" step="0.01" min="0" placeholder="Ex: 10" required/>
+                  </div>
+                  <div>
+                    <label>Qtd mínima</label>
+                    <input id="stMin" type="number" step="0.01" min="0" placeholder="Ex: 3" required/>
+                  </div>
+                  <div>
+                    <label>R$ unitário</label>
+                    <input id="stUnit" type="number" step="0.01" min="0" placeholder="Ex: 25" />
+                  </div>
+                  <div class="full">
+                    <label>Observação</label>
+                    <input id="stObs" placeholder="Ex: validade, cor, lote..." />
+                  </div>
+                  <div class="full">
+                    <button class="primary" type="submit">➕ Adicionar material</button>
+                  </div>
+                </form>
+                <div class="hint">Aqui é onde sua gestão deixa de ser “seca”. Estoque bom = lucro protegido.</div>
+              </div>
+            </div>
+
+            <div class="panel" style="box-shadow:none">
+              <div class="hd">
+                <div class="h">
+                  <b>Movimentar / Comprar</b>
+                  <span>entrada e saída do estoque</span>
+                </div>
+              </div>
+              <div class="bd">
+                <form id="formMove" class="form" autocomplete="off">
+                  <div class="full">
+                    <label>Material</label>
+                    <select id="mvId" required></select>
+                  </div>
+                  <div>
+                    <label>Tipo</label>
+                    <select id="mvType" required>
+                      <option value="in">Entrada (compra)</option>
+                      <option value="out">Saída (uso)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label>Data</label>
+                    <input id="mvDate" type="date" required/>
+                  </div>
+                  <div>
+                    <label>Quantidade</label>
+                    <input id="mvQty" type="number" step="0.01" min="0" placeholder="Ex: 2" required/>
+                  </div>
+                  <div>
+                    <label>R$ total (se compra)</label>
+                    <input id="mvCost" type="number" step="0.01" min="0" placeholder="Ex: 150" />
+                  </div>
+                  <div class="full">
+                    <label>Motivo</label>
+                    <input id="mvReason" placeholder="Ex: compra mensal / procedimento / perda / vencido..." />
+                  </div>
+                  <div class="full">
+                    <button class="primary" type="submit">📦 Registrar movimento</button>
+                  </div>
+                </form>
+                <div class="hint">Se você registrar “compra”, o sistema também lança **Saída no Caixa** automaticamente (categoria: Material).</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="grid3">
+            <div class="card"><div class="k">Itens cadastrados</div><div class="v" id="stCount">0</div></div>
+            <div class="card"><div class="k">Estoque crítico</div><div class="v" id="stLow">0</div></div>
+            <div class="card"><div class="k">Valor estimado em estoque</div><div class="v" id="stValue">R$ 0,00</div></div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="k">Materiais</div>
+          <div style="overflow:auto;margin-top:10px">
+            <table class="tbl" id="stockTable">
+              <thead>
+                <tr>
+                  <th>Material</th><th>Categoria</th><th>Qtd</th><th>Mín</th><th>Status</th><th>R$ unit</th><th>Fornecedor</th><th>Obs</th><th>Ação</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+          <div class="hr"></div>
+          <div class="k">Histórico de movimentações (últimos 30)</div>
+          <div style="overflow:auto;margin-top:10px">
+            <table class="tbl" id="moveTable">
+              <thead>
+                <tr>
+                  <th>Data</th><th>Material</th><th>Tipo</th><th>Qtd</th><th>R$</th><th>Motivo</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- EQUIPAMENTOS -->
+      <section class="panel hide" id="tab-equip">
+        <div class="hd">
+          <div class="h">
+            <b>Equipamentos</b>
+            <span>compras, manutenção e alertas</span>
+          </div>
+        </div>
+        <div class="bd">
+          <div class="grid2">
+            <div class="panel" style="box-shadow:none">
+              <div class="hd">
+                <div class="h">
+                  <b>Cadastrar equipamento</b>
+                  <span>vida útil e manutenção</span>
+                </div>
+              </div>
+              <div class="bd">
+                <form id="formEquip" class="form" autocomplete="off">
+                  <div class="full">
+                    <label>Equipamento</label>
+                    <input id="eqName" placeholder="Ex: Autoclave, Fotopolimerizador, Compressor..." required/>
+                  </div>
+                  <div>
+                    <label>Data de compra</label>
+                    <input id="eqBuy" type="date"/>
+                  </div>
+                  <div>
+                    <label>Valor (R$)</label>
+                    <input id="eqValue" type="number" step="0.01" min="0" placeholder="Ex: 3500"/>
+                  </div>
+                  <div>
+                    <label>Última manutenção</label>
+                    <input id="eqLast" type="date"/>
+                  </div>
+                  <div>
+                    <label>Próxima manutenção</label>
+                    <input id="eqNext" type="date"/>
+                  </div>
+                  <div class="full">
+                    <label>Observação</label>
+                    <input id="eqObs" placeholder="Ex: garantia, assistência, nº série..." />
+                  </div>
+                  <div class="full">
+                    <button class="primary" type="submit">➕ Adicionar equipamento</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            <div class="panel" style="box-shadow:none">
+              <div class="hd">
+                <div class="h">
+                  <b>Alertas</b>
+                  <span>o que vai vencer / precisa cuidado</span>
+                </div>
+              </div>
+              <div class="bd">
+                <div class="card">
+                  <div class="k">Manutenções próximas (30 dias)</div>
+                  <div class="hint" id="eqAlerts">—</div>
+                </div>
+                <div class="hr"></div>
+                <div class="card">
+                  <div class="k">Valor total em equipamentos (estimado)</div>
+                  <div class="v" id="eqTotal">R$ 0,00</div>
+                  <div class="hint">isso entra no seu “patrimônio” da clínica</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div class="k">Lista de equipamentos</div>
+          <div style="overflow:auto;margin-top:10px">
+            <table class="tbl" id="equipTable">
+              <thead>
+                <tr>
+                  <th>Equipamento</th><th>Compra</th><th>R$</th><th>Últ. Manut.</th><th>Próx. Manut.</th><th>Status</th><th>Obs</th><th>Ação</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- AGENDA -->
+      <section class="panel hide" id="tab-agenda">
+        <div class="hd">
+          <div class="h">
+            <b>Agenda</b>
+            <span>controle simples com status (alimenta taxa de faltas)</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+            <div style="min-width:160px">
+              <label>Status</label>
+              <select id="filterStatus">
+                <option value="all">Todos</option>
+                <option value="realizado">Realizado</option>
+                <option value="confirmado">Confirmado</option>
+                <option value="aguardando">Aguardando</option>
+                <option value="faltou">Faltou</option>
+                <option value="reagendado">Reagendado</option>
+              </select>
+            </div>
+            <div style="min-width:220px">
+              <label>Buscar</label>
+              <input id="searchAppt" placeholder="Paciente, procedimento, obs..."/>
+            </div>
+          </div>
+        </div>
+
+        <div class="bd">
+          <div class="grid2">
+            <div class="panel" style="box-shadow:none">
+              <div class="hd">
+                <div class="h">
+                  <b>Novo agendamento</b>
+                  <span>rápido e direto</span>
+                </div>
+              </div>
+              <div class="bd">
+                <form id="formAppt" class="form" autocomplete="off">
+                  <div>
+                    <label>Data</label>
+                    <input id="apptDate" type="date" required/>
+                  </div>
+                  <div>
+                    <label>Hora</label>
+                    <input id="apptTime" type="time" required/>
+                  </div>
+                  <div class="full">
+                    <label>Paciente</label>
+                    <input id="apptPatient" required placeholder="Nome do paciente"/>
+                  </div>
+                  <div>
+                    <label>Profissional</label>
+                    <input id="apptPro" placeholder="Ex: Dr. Orlando"/>
+                  </div>
+                  <div>
+                    <label>Procedimento</label>
+                    <input id="apptProc" placeholder="Ex: Exodontia, Restauração..."/>
+                  </div>
+                  <div>
+                    <label>Valor (R$)</label>
+                    <input id="apptValue" type="number" step="0.01" min="0" placeholder="Ex: 300"/>
+                  </div>
+                  <div>
+                    <label>Status</label>
+                    <select id="apptStatus">
+                      <option value="realizado">Realizado</option>
+                      <option value="confirmado">Confirmado</option>
+                      <option value="aguardando">Aguardando</option>
+                      <option value="faltou">Faltou</option>
+                      <option value="reagendado">Reagendado</option>
+                    </select>
+                  </div>
+                  <div class="full">
+                    <label>Obs</label>
+                    <input id="apptObs" placeholder="Ex: retorno, trazer exames..."/>
+                  </div>
+                  <div class="full">
+                    <button class="primary" type="submit">📌 Adicionar</button>
+                  </div>
+                </form>
+                <div class="hint">Dica: se o atendimento foi “realizado” e você botar valor, dá pra lançar também no caixa.</div>
+              </div>
+            </div>
+
+            <div class="panel" style="box-shadow:none">
+              <div class="hd">
+                <div class="h">
+                  <b>Resumo</b>
+                  <span>organização</span>
+                </div>
+              </div>
+              <div class="bd">
+                <div class="card">
+                  <div class="k">Status no período (filtro atual)</div>
+                  <div class="hint" id="apptSummary">—</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+
+          <div style="overflow:auto">
+            <table class="tbl" id="apptTable">
+              <thead>
+                <tr>
+                  <th>Data/Hora</th><th>Paciente</th><th>Prof.</th><th>Procedimento</th><th>Valor</th><th>Status</th><th>Obs.</th><th>Ação</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- PLANEJAMENTO -->
+      <section class="panel hide" id="tab-plan">
+        <div class="hd">
+          <div class="h">
+            <b>Planejamento (o “cérebro” da clínica)</b>
+            <span>o que falta, objetivos, compras, ideias, checklists</span>
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="mini" id="btnAddTask">✅ Nova tarefa</button>
+            <button class="mini" id="btnClearDone">🧹 Limpar concluídas</button>
+            <button class="mini" id="btnSaveNotes">💾 Salvar</button>
+          </div>
+        </div>
+
+        <div class="bd">
+          <div class="grid2">
+            <div>
+              <label>Notas estratégicas</label>
+              <textarea id="notesText" rows="14" placeholder="Ex:
+- Objetivo do mês: aumentar ticket médio
+- Compras: resina, anestésico, brocas
+- O que tá gastando demais: X
+- Meta: reduzir faltas em 20%
+- Ideias: parceria, campanha WhatsApp, etc."></textarea>
+              <div class="hint">Tudo aqui entra no PDF. É teu painel mental.</div>
+            </div>
+
+            <div>
+              <div class="k" style="margin:0 0 10px 4px">✅ Checklist de tarefas / objetivos</div>
+              <div id="tasksBox"></div>
+              <div class="hint">Isso é o que dá “corpo” de gestão: plano + execução.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- PRINT AREA -->
+      <section class="panel print-only" id="printArea">
+        <div class="print-header">
+          <h1>Relatório • Gestão Profissional</h1>
+          <p id="printMeta">—</p>
+        </div>
+        <div class="bd">
+          <div class="grid3" style="gap:10px">
+            <div class="card"><div class="k">Faturamento</div><div class="v" id="pRev">—</div></div>
+            <div class="card"><div class="k">Gastos</div><div class="v" id="pExp">—</div></div>
+            <div class="card"><div class="k">Lucro</div><div class="v" id="pProfit">—</div></div>
+          </div>
+
+          <div class="grid2" style="margin-top:12px">
+            <div>
+              <div class="k" style="margin:0 0 8px 4px">Evolução</div>
+              <img id="imgLine" alt="Gráfico evolução" style="width:100%;border:1px solid #ddd;border-radius:14px"/>
+            </div>
+            <div>
+              <div class="k" style="margin:0 0 8px 4px">Gastos por categoria</div>
+              <img id="imgCats" alt="Gráfico categorias" style="width:100%;border:1px solid #ddd;border-radius:14px"/>
+            </div>
+          </div>
+
+          <div class="grid2" style="margin-top:12px">
+            <div>
+              <div class="k" style="margin:0 0 8px 4px">Pagamentos</div>
+              <img id="imgPay" alt="Gráfico pagamentos" style="width:100%;border:1px solid #ddd;border-radius:14px"/>
+            </div>
+            <div class="card">
+              <div class="k">Estoque crítico</div>
+              <div class="v" id="pLow">—</div>
+              <div class="k" style="margin-top:10px">Taxa de faltas</div>
+              <div class="v" id="pNoShow">—</div>
+            </div>
+          </div>
+
+          <div class="hr"></div>
+          <div class="k">Caixa (últimos 20)</div>
+          <div id="printCash"></div>
+
+          <div class="hr"></div>
+          <div class="k">Estoque crítico (itens abaixo do mínimo)</div>
+          <div id="printLowStock"></div>
+
+          <div class="hr"></div>
+          <div class="k">Agenda (últimos 20)</div>
+          <div id="printAppts"></div>
+
+          <div class="hr"></div>
+          <div class="k">Notas</div>
+          <pre id="printNotes" style="white-space:pre-wrap;font-family:var(--sans);font-size:12px;color:#222"></pre>
+
+          <div class="k">Tarefas</div>
+          <div id="printTasks"></div>
+        </div>
+      </section>
+
+    </main>
+  </div>
 </div>
 
 <script>
-let entradas = JSON.parse(localStorage.getItem("entradas")) || [];
-let agenda = JSON.parse(localStorage.getItem("agenda")) || [];
+/* =========================
+   BTX • Gestão Profissional
+   (single-file)
+   - localStorage
+   - charts canvas (no libs)
+   - print to PDF
+========================= */
 
-function salvarLocal() {
-    localStorage.setItem("entradas", JSON.stringify(entradas));
-    localStorage.setItem("agenda", JSON.stringify(agenda));
-}
+const KEY = "btx_gestao_prof_v1";
+const $ = (id)=>document.getElementById(id);
 
-function adicionarEntrada() {
-    let data = document.getElementById("data").value;
-    let valor = parseFloat(document.getElementById("valor").value);
-    if(data && valor) {
-        entradas.push({data, valor});
-        salvarLocal();
-        atualizarGrafico();
-    }
-}
+const state = loadState();
 
-function adicionarAgenda() {
-    let data = document.getElementById("agendaData").value;
-    let texto = document.getElementById("agendaTexto").value;
-    if(data && texto) {
-        agenda.push({data, texto});
-        salvarLocal();
-        renderAgenda();
-    }
-}
+init();
 
-function renderAgenda() {
-    let lista = document.getElementById("listaAgenda");
-    lista.innerHTML = "";
-    agenda.forEach(item => {
-        let li = document.createElement("li");
-        li.innerText = item.data + " - " + item.texto;
-        lista.appendChild(li);
+function init(){
+  $("nowTag").textContent = new Date().toLocaleString("pt-BR");
+
+  // defaults de datas
+  $("cashDate").value = todayISO();
+  $("mvDate").value = todayISO();
+  $("apptDate").value = todayISO();
+  $("apptTime").value = "08:00";
+
+  $("notesText").value = state.notes || "";
+
+  // sidebar tabs
+  document.querySelectorAll(".nav button").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll(".nav button").forEach(b=>b.classList.remove("active"));
+      btn.classList.add("active");
+      showTab(btn.dataset.tab);
     });
+  });
+
+  // filters / events
+  $("filterRange").addEventListener("change", renderAll);
+  $("filterStatus").addEventListener("change", renderAll);
+  $("searchAppt").addEventListener("input", renderAll);
+
+  // cash form
+  $("formCash").addEventListener("submit", (ev)=>{
+    ev.preventDefault();
+    const item = {
+      id: uid(),
+      type: $("cashType").value,
+      date: $("cashDate").value || todayISO(),
+      value: num($("cashValue").value),
+      pay: trim($("cashPay").value),
+      cat: trim($("cashCat").value),
+      desc: trim($("cashDesc").value)
+    };
+    if(item.value<=0) return alert("Coloca um valor > 0.");
+    if(!item.cat) return alert("Categoria é obrigatório (senão a gestão fica seca).");
+    state.cash.unshift(item);
+    saveState();
+    ev.target.reset();
+    $("cashDate").value = todayISO();
+    $("cashPay").value = "Pix";
+    renderAll();
+    toast("Lançamento salvo ✔️");
+  });
+
+  // stock add
+  $("formStock").addEventListener("submit", (ev)=>{
+    ev.preventDefault();
+    const st = {
+      id: uid(),
+      name: trim($("stName").value),
+      cat: trim($("stCat").value),
+      supplier: trim($("stSupplier").value),
+      qty: num($("stQty").value),
+      min: num($("stMin").value),
+      unit: num($("stUnit").value),
+      obs: trim($("stObs").value),
+      createdAt: Date.now()
+    };
+    if(!st.name) return alert("Nome do material é obrigatório.");
+    state.stock.unshift(st);
+    saveState();
+    ev.target.reset();
+    refreshMoveSelect();
+    renderAll();
+    toast("Material cadastrado ✔️");
+  });
+
+  // stock move
+  $("formMove").addEventListener("submit", (ev)=>{
+    ev.preventDefault();
+    const stId = $("mvId").value;
+    const st = state.stock.find(x=>x.id===stId);
+    if(!st) return alert("Escolhe um material válido.");
+    const mv = {
+      id: uid(),
+      stId,
+      date: $("mvDate").value || todayISO(),
+      type: $("mvType").value, // in/out
+      qty: num($("mvQty").value),
+      cost: num($("mvCost").value),
+      reason: trim($("mvReason").value)
+    };
+    if(mv.qty<=0) return alert("Quantidade deve ser > 0.");
+
+    // aplica movimentação
+    if(mv.type==="in"){
+      st.qty += mv.qty;
+      // se veio custo, atualiza custo médio unitário simples
+      if(mv.cost>0){
+        const unitNew = mv.cost / mv.qty;
+        // média simples (pra não complicar demais)
+        if(st.unit>0) st.unit = (st.unit + unitNew)/2;
+        else st.unit = unitNew;
+
+        // lança no caixa automaticamente como SAÍDA de MATERIAL
+        state.cash.unshift({
+          id: uid(),
+          type: "out",
+          date: mv.date,
+          value: mv.cost,
+          pay: "Pix",
+          cat: "Material",
+          desc: `Compra: ${st.name}${mv.reason?(" • "+mv.reason):""}`
+        });
+      }
+    } else {
+      st.qty = Math.max(0, st.qty - mv.qty);
+    }
+
+    state.moves.unshift(mv);
+    saveState();
+    ev.target.reset();
+    $("mvDate").value = todayISO();
+    renderAll();
+    toast("Movimento registrado ✔️");
+  });
+
+  $("btnRecalcStock").addEventListener("click", ()=>{
+    renderAll();
+    toast("Recalculado ✔️");
+  });
+
+  // equip
+  $("formEquip").addEventListener("submit", (ev)=>{
+    ev.preventDefault();
+    const eq = {
+      id: uid(),
+      name: trim($("eqName").value),
+      buy: $("eqBuy").value || "",
+      value: num($("eqValue").value),
+      last: $("eqLast").value || "",
+      next: $("eqNext").value || "",
+      obs: trim($("eqObs").value)
+    };
+    if(!eq.name) return alert("Nome do equipamento é obrigatório.");
+    state.equip.unshift(eq);
+    saveState();
+    ev.target.reset();
+    renderAll();
+    toast("Equipamento cadastrado ✔️");
+  });
+
+  // agenda
+  $("formAppt").addEventListener("submit", (ev)=>{
+    ev.preventDefault();
+    const a = {
+      id: uid(),
+      date: $("apptDate").value || todayISO(),
+      time: $("apptTime").value || "08:00",
+      patient: trim($("apptPatient").value),
+      pro: trim($("apptPro").value || "—"),
+      proc: trim($("apptProc").value || "—"),
+      value: num($("apptValue").value),
+      status: $("apptStatus").value,
+      obs: trim($("apptObs").value || "")
+    };
+    if(!a.patient) return alert("Paciente é obrigatório.");
+    state.appts.unshift(a);
+    saveState();
+    ev.target.reset();
+    $("apptDate").value = todayISO();
+    $("apptTime").value = "08:00";
+    renderAll();
+    toast("Agendamento salvo ✔️");
+  });
+
+  // plan
+  $("btnSaveNotes").addEventListener("click", ()=>{
+    state.notes = $("notesText").value || "";
+    saveState();
+    toast("Notas salvas ✔️");
+  });
+  $("btnAddTask").addEventListener("click", ()=>{
+    const title = prompt("Nome da tarefa/objetivo:");
+    if(!title) return;
+    const due = prompt("Pra quando? (opcional, ex: 2026-03-01)") || "";
+    state.tasks.unshift({id: uid(), title: trim(title), due: trim(due), done:false});
+    saveState();
+    renderAll();
+  });
+  $("btnClearDone").addEventListener("click", ()=>{
+    state.tasks = state.tasks.filter(t=>!t.done);
+    saveState();
+    renderAll();
+  });
+
+  // backup/restore/wipe
+  $("btnBackup").addEventListener("click", backup);
+  $("btnRestore").addEventListener("click", restore);
+  $("btnWipe").addEventListener("click", wipe);
+
+  // export CSV
+  $("btnExportCSV").addEventListener("click", exportCSV);
+
+  // seed example
+  $("btnSeed").addEventListener("click", seedExample);
+
+  // print
+  $("btnPrint").addEventListener("click", ()=>{
+    preparePrint();
+    setTimeout(()=>window.print(), 80);
+  });
+
+  // start
+  refreshMoveSelect();
+  renderAll();
 }
 
-function salvarNotas() {
-    localStorage.setItem("notas", document.getElementById("notas").value);
+function showTab(name){
+  const tabs = ["dash","cash","stock","equip","agenda","plan"];
+  tabs.forEach(t=> $("tab-"+t).classList.add("hide"));
+  $("tab-"+name).classList.remove("hide");
+  // re-render charts after visible (canvas needs sizes)
+  setTimeout(renderAll, 30);
 }
 
-document.getElementById("notas").value = localStorage.getItem("notas") || "";
+/* ---------- State ---------- */
+function loadState(){
+  try{
+    const raw = localStorage.getItem(KEY);
+    if(!raw) return freshState();
+    const obj = JSON.parse(raw);
+    obj.cash ??= [];
+    obj.stock ??= [];
+    obj.moves ??= [];
+    obj.equip ??= [];
+    obj.appts ??= [];
+    obj.notes ??= "";
+    obj.tasks ??= [];
+    obj.meta ??= {createdAt: Date.now(), version: 1};
+    return obj;
+  }catch{
+    return freshState();
+  }
+}
+function freshState(){
+  return {cash:[], stock:[], moves:[], equip:[], appts:[], notes:"", tasks:[], meta:{createdAt:Date.now(), version:1}};
+}
+function saveState(){ localStorage.setItem(KEY, JSON.stringify(state)); }
 
-let ctx = document.getElementById("grafico").getContext("2d");
-let grafico;
+/* ---------- Utils ---------- */
+function todayISO(){
+  const d = new Date();
+  const tz = d.getTimezoneOffset()*60000;
+  return new Date(Date.now()-tz).toISOString().slice(0,10);
+}
+function uid(){ return Math.random().toString(16).slice(2) + Date.now().toString(16); }
+function trim(s){ return (s??"").toString().trim(); }
+function num(v){ const n = Number(v||0); return Number.isFinite(n)? n : 0; }
+function money(n){ return (Number(n||0)).toLocaleString("pt-BR",{style:"currency",currency:"BRL"}); }
+function dateAdd(iso, days){
+  const d = new Date(iso+"T00:00:00"); d.setDate(d.getDate()+days);
+  const tz = d.getTimezoneOffset()*60000;
+  return new Date(d.getTime()-tz).toISOString().slice(0,10);
+}
+function escapeHtml(s){
+  return String(s??"")
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+function toast(msg){
+  const t = document.createElement("div");
+  t.textContent = msg;
+  t.style.position="fixed";
+  t.style.bottom="16px";
+  t.style.left="16px";
+  t.style.padding="10px 12px";
+  t.style.border="1px solid rgba(255,255,255,.16)";
+  t.style.borderRadius="14px";
+  t.style.background="rgba(0,0,0,.55)";
+  t.style.backdropFilter="blur(10px)";
+  t.style.color="rgba(255,255,255,.92)";
+  t.style.zIndex="999";
+  t.style.boxShadow="0 18px 50px rgba(0,0,0,.35)";
+  document.body.appendChild(t);
+  setTimeout(()=>{ t.style.opacity="0"; t.style.transition="opacity .25s ease"; }, 900);
+  setTimeout(()=>t.remove(), 1200);
+}
 
-function atualizarGrafico() {
-    let datas = entradas.map(e => e.data);
-    let valores = entradas.map(e => e.valor);
+/* ---------- Rendering ---------- */
+function renderAll(){
+  // dashboard metrics based on filter
+  const range = $("filterRange").value;
+  const days = range==="all" ? null : Number(range);
+  const minDate = days ? dateAdd(todayISO(), -days) : null;
 
-    if(grafico) grafico.destroy();
+  const cashF = state.cash.filter(c => !minDate || (c.date >= minDate));
+  const apptF = state.appts.filter(a => !minDate || (a.date >= minDate));
 
-    grafico = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: datas,
-            datasets: [{
-                label: 'Faturamento',
-                data: valores,
-                borderColor: '#1565c0',
-                fill: false
-            }]
-        }
+  // KPIs
+  const rev = cashF.filter(c=>c.type==="in").reduce((s,c)=>s+num(c.value),0);
+  const exp = cashF.filter(c=>c.type==="out").reduce((s,c)=>s+num(c.value),0);
+  const profit = rev - exp;
+
+  const totalAppts = apptF.length;
+  const noShow = apptF.filter(a=>a.status==="faltou").length;
+  const noShowRate = totalAppts ? (noShow/totalAppts)*100 : 0;
+
+  const lowItems = state.stock.filter(s=>num(s.qty) <= num(s.min)).length;
+
+  $("kpiRev").textContent = money(rev);
+  $("kpiExp").textContent = money(exp);
+  $("kpiProfit").textContent = money(profit);
+  $("kpiAppts").textContent = String(totalAppts);
+  $("kpiNoShow").textContent = noShowRate.toFixed(1) + "%";
+  $("kpiLow").textContent = lowItems + " itens";
+
+  $("kpiRevHint").textContent = "período: " + $("filterRange").selectedOptions[0].textContent;
+  $("kpiExpHint").textContent = "categorias bem lançadas = visão real";
+  $("kpiProfitHint").textContent = profit>=0 ? "clínica saudável (por enquanto)" : "alerta: gastando mais do que entra";
+
+  // manager summary
+  const topCat = topCategories(cashF, 3);
+  $("mgrSummary").innerHTML =
+    `• Entradas: <b>${money(rev)}</b><br>
+     • Saídas: <b>${money(exp)}</b><br>
+     • Lucro: <b>${money(profit)}</b><br>
+     • Top gastos: <b>${topCat.map(x=>x.cat+" ("+money(x.sum)+")").join(", ") || "—"}</b><br>
+     • Estoque crítico: <b>${lowItems}</b>`;
+
+  // Draw charts
+  const series = monthSeries(cashF);
+  drawMultiLine($("chartLine"), series, [
+    {key:"rev", label:"Faturamento", color:"rgba(59,130,246,.95)"},
+    {key:"exp", label:"Gastos", color:"rgba(239,68,68,.78)"},
+    {key:"profit", label:"Lucro", color:"rgba(6,182,212,.90)"}
+  ]);
+
+  const cats = topCategories(cashF.filter(c=>c.type==="out"), 8).map(x=>({label:x.cat, value:x.sum}));
+  drawBars($("chartCats"), cats.length?cats:[{label:"—", value:0}], "Gastos");
+
+  const pay = payMix(cashF.filter(c=>c.type==="in"));
+  drawBars($("chartPay"), pay.length?pay:[{label:"—", value:0}], "Pagamentos");
+
+  // cash tab
+  renderCashTable(state.cash);
+  $("cashIn").textContent = money(state.cash.filter(c=>c.type==="in").reduce((s,c)=>s+num(c.value),0));
+  $("cashOut").textContent = money(state.cash.filter(c=>c.type==="out").reduce((s,c)=>s+num(c.value),0));
+  const bal = state.cash.filter(c=>c.type==="in").reduce((s,c)=>s+num(c.value),0) - state.cash.filter(c=>c.type==="out").reduce((s,c)=>s+num(c.value),0);
+  $("cashBal").textContent = money(bal);
+  $("topCats").textContent = topCategories(state.cash.filter(c=>c.type==="out"), 5).map(x=>`${x.cat}: ${money(x.sum)}`).join(" • ") || "—";
+  $("cashSummary").textContent = `Itens no caixa: ${state.cash.length} • Saldo total: ${money(bal)}`;
+
+  // stock tab
+  refreshMoveSelect();
+  renderStockTables();
+
+  // equip tab
+  renderEquipTable();
+
+  // agenda tab
+  renderApptTable();
+
+  // plan tab
+  renderTasks();
+}
+
+function monthSeries(cash){
+  const m = {};
+  cash.forEach(c=>{
+    const key = (c.date||"").slice(0,7);
+    if(!key) return;
+    m[key] ??= {label:key, rev:0, exp:0, profit:0};
+    if(c.type==="in") m[key].rev += num(c.value);
+    else m[key].exp += num(c.value);
+    m[key].profit = m[key].rev - m[key].exp;
+  });
+  const keys = Object.keys(m).sort();
+  if(keys.length===0){
+    const k = todayISO().slice(0,7);
+    return [{label:k, rev:0, exp:0, profit:0}];
+  }
+  return keys.map(k=>m[k]);
+}
+
+function topCategories(cashOut, n){
+  const map = {};
+  cashOut.forEach(c=>{
+    const cat = trim(c.cat) || "Sem categoria";
+    map[cat] = (map[cat]||0) + num(c.value);
+  });
+  return Object.entries(map)
+    .map(([cat,sum])=>({cat,sum}))
+    .sort((a,b)=>b.sum-a.sum)
+    .slice(0,n);
+}
+
+function payMix(cashIn){
+  const map = {};
+  cashIn.forEach(c=>{
+    const p = trim(c.pay)||"Outro";
+    map[p] = (map[p]||0) + num(c.value);
+  });
+  const order = ["Pix","Cartão","Dinheiro","Convênio","Outro"];
+  const out = [];
+  order.forEach(k=>{ if(map[k]) out.push({label:k, value:map[k]}); });
+  Object.keys(map).sort().forEach(k=>{ if(!order.includes(k)) out.push({label:k, value:map[k]}); });
+  return out;
+}
+
+/* ---------- Tables ---------- */
+function renderCashTable(list){
+  const tbody = $("cashTable").querySelector("tbody");
+  tbody.innerHTML = "";
+  const sorted = list.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||""));
+  sorted.forEach(c=>{
+    const tr = document.createElement("tr");
+    const typeP = c.type==="in" ? `<span class="pill ok">Entrada</span>` : `<span class="pill bad">Saída</span>`;
+    tr.innerHTML = `
+      <td>${escapeHtml(c.date||"")}</td>
+      <td>${typeP}</td>
+      <td>${escapeHtml(money(c.value||0))}</td>
+      <td>${escapeHtml(c.pay||"")}</td>
+      <td>${escapeHtml(c.cat||"")}</td>
+      <td>${escapeHtml(c.desc||"")}</td>
+      <td><button class="mini danger">Excluir</button></td>
+    `;
+    tr.querySelector("button").addEventListener("click", ()=>{
+      state.cash = state.cash.filter(x=>x.id!==c.id);
+      saveState(); renderAll();
     });
+    tbody.appendChild(tr);
+  });
 }
 
-function gerarPDF() {
-    const elemento = document.getElementById("conteudoPDF");
-    html2pdf().from(elemento).save("relatorio_gestao.pdf");
+function refreshMoveSelect(){
+  const sel = $("mvId");
+  const cur = sel.value;
+  sel.innerHTML = "";
+  if(state.stock.length===0){
+    const opt = document.createElement("option");
+    opt.value=""; opt.textContent="(cadastre um material primeiro)";
+    sel.appendChild(opt);
+    sel.disabled = true;
+    return;
+  }
+  sel.disabled = false;
+  state.stock.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach(s=>{
+    const opt = document.createElement("option");
+    opt.value = s.id;
+    opt.textContent = s.name;
+    sel.appendChild(opt);
+  });
+  if(cur) sel.value = cur;
 }
 
-renderAgenda();
-atualizarGrafico();
+function renderStockTables(){
+  $("stCount").textContent = String(state.stock.length);
+
+  const low = state.stock.filter(s=>num(s.qty)<=num(s.min));
+  $("stLow").textContent = String(low.length);
+
+  const value = state.stock.reduce((sum,s)=> sum + (num(s.qty)*num(s.unit)), 0);
+  $("stValue").textContent = money(value);
+
+  // stock table
+  const tbody = $("stockTable").querySelector("tbody");
+  tbody.innerHTML = "";
+  state.stock.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach(s=>{
+    const isLow = num(s.qty)<=num(s.min);
+    const status = isLow ? `<span class="pill bad">Abaixo do mínimo</span>` : `<span class="pill ok">OK</span>`;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><b>${escapeHtml(s.name||"")}</b></td>
+      <td>${escapeHtml(s.cat||"")}</td>
+      <td>${escapeHtml(String(s.qty??0))}</td>
+      <td>${escapeHtml(String(s.min??0))}</td>
+      <td>${status}</td>
+      <td>${escapeHtml(money(s.unit||0))}</td>
+      <td>${escapeHtml(s.supplier||"")}</td>
+      <td>${escapeHtml(s.obs||"")}</td>
+      <td><button class="mini danger">Excluir</button></td>
+    `;
+    tr.querySelector("button").addEventListener("click", ()=>{
+      if(!confirm("Excluir esse material?")) return;
+      state.stock = state.stock.filter(x=>x.id!==s.id);
+      // remove movimentos vinculados
+      state.moves = state.moves.filter(m=>m.stId!==s.id);
+      saveState(); renderAll();
+    });
+    tbody.appendChild(tr);
+  });
+
+  // moves table
+  const mt = $("moveTable").querySelector("tbody");
+  mt.innerHTML = "";
+  state.moves.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,30).forEach(mv=>{
+    const st = state.stock.find(x=>x.id===mv.stId);
+    const name = st ? st.name : "(removido)";
+    const tp = mv.type==="in" ? `<span class="pill ok">Entrada</span>` : `<span class="pill warn">Saída</span>`;
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(mv.date||"")}</td>
+      <td>${escapeHtml(name)}</td>
+      <td>${tp}</td>
+      <td>${escapeHtml(String(mv.qty??0))}</td>
+      <td>${escapeHtml(money(mv.cost||0))}</td>
+      <td>${escapeHtml(mv.reason||"")}</td>
+    `;
+    mt.appendChild(tr);
+  });
+}
+
+function renderEquipTable(){
+  const tbody = $("equipTable").querySelector("tbody");
+  tbody.innerHTML = "";
+
+  const total = state.equip.reduce((s,e)=>s+num(e.value),0);
+  $("eqTotal").textContent = money(total);
+
+  // alerts (next in 30 days)
+  const today = todayISO();
+  const in30 = dateAdd(today, 30);
+  const upcoming = state.equip
+    .filter(e=>e.next && e.next>=today && e.next<=in30)
+    .sort((a,b)=>(a.next||"").localeCompare(b.next||""));
+  $("eqAlerts").textContent = upcoming.length
+    ? upcoming.map(e=>`${e.name} (próx: ${e.next})`).join(" • ")
+    : "—";
+
+  state.equip.slice().sort((a,b)=>(a.name||"").localeCompare(b.name||"")).forEach(e=>{
+    const status = (!e.next) ? `<span class="pill">Sem data</span>` :
+      (e.next < today ? `<span class="pill bad">Atrasado</span>` :
+        (e.next <= in30 ? `<span class="pill warn">Próximo</span>` : `<span class="pill ok">OK</span>`));
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><b>${escapeHtml(e.name||"")}</b></td>
+      <td>${escapeHtml(e.buy||"")}</td>
+      <td>${escapeHtml(money(e.value||0))}</td>
+      <td>${escapeHtml(e.last||"")}</td>
+      <td>${escapeHtml(e.next||"")}</td>
+      <td>${status}</td>
+      <td>${escapeHtml(e.obs||"")}</td>
+      <td><button class="mini danger">Excluir</button></td>
+    `;
+    tr.querySelector("button").addEventListener("click", ()=>{
+      if(!confirm("Excluir esse equipamento?")) return;
+      state.equip = state.equip.filter(x=>x.id!==e.id);
+      saveState(); renderAll();
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function renderApptTable(){
+  const tbody = $("apptTable").querySelector("tbody");
+  tbody.innerHTML = "";
+  const statusFilter = $("filterStatus").value;
+  const q = trim($("searchAppt").value).toLowerCase();
+
+  const list = state.appts.slice().sort((a,b)=>{
+    const da = (a.date||"")+(a.time||"");
+    const db = (b.date||"")+(b.time||"");
+    return db.localeCompare(da);
+  }).filter(a=>{
+    if(statusFilter!=="all" && a.status!==statusFilter) return false;
+    if(q){
+      const hay = `${a.patient} ${a.proc} ${a.pro} ${a.obs}`.toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const counts = list.reduce((acc,a)=>(acc[a.status]=(acc[a.status]||0)+1, acc),{});
+  const parts = Object.entries(counts).map(([k,v])=>`${k}: ${v}`).join(" • ");
+  $("apptSummary").textContent = `Total: ${list.length}${parts?(" • "+parts):""}`;
+
+  list.forEach(a=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${escapeHtml(a.date||"")} ${escapeHtml(a.time||"")}</td>
+      <td>${escapeHtml(a.patient||"")}</td>
+      <td>${escapeHtml(a.pro||"")}</td>
+      <td>${escapeHtml(a.proc||"")}</td>
+      <td>${escapeHtml(money(a.value||0))}</td>
+      <td>${statusPill(a.status)}</td>
+      <td>${escapeHtml(a.obs||"")}</td>
+      <td><button class="mini danger">Excluir</button></td>
+    `;
+    tr.querySelector("button").addEventListener("click", ()=>{
+      state.appts = state.appts.filter(x=>x.id!==a.id);
+      saveState(); renderAll();
+    });
+    tbody.appendChild(tr);
+  });
+}
+
+function statusPill(status){
+  const map = {
+    realizado: ["ok","Realizado"],
+    confirmado: ["ok","Confirmado"],
+    aguardando: ["warn","Aguardando"],
+    faltou: ["bad","Faltou"],
+    reagendado: ["warn","Reagendado"],
+  };
+  const [cls, label] = map[status] || ["","—"];
+  return `<span class="pill ${cls}">${label}</span>`;
+}
+
+function renderTasks(){
+  const box = $("tasksBox");
+  box.innerHTML = "";
+  if(!state.tasks.length){
+    const d = document.createElement("div");
+    d.className = "hint";
+    d.textContent = "Sem tarefas ainda. Clica em “Nova tarefa”.";
+    box.appendChild(d);
+    return;
+  }
+  state.tasks.forEach(t=>{
+    const row = document.createElement("div");
+    row.style.display="flex";
+    row.style.gap="10px";
+    row.style.alignItems="center";
+    row.style.padding="10px";
+    row.style.border="1px solid rgba(255,255,255,.10)";
+    row.style.borderRadius="14px";
+    row.style.background="rgba(0,0,0,.12)";
+    row.style.marginBottom="8px";
+
+    const chk = document.createElement("input");
+    chk.type="checkbox";
+    chk.checked = !!t.done;
+    chk.style.width="18px"; chk.style.height="18px";
+    chk.addEventListener("change", ()=>{
+      t.done = chk.checked;
+      saveState(); renderAll();
+    });
+
+    const txt = document.createElement("div");
+    txt.style.flex="1";
+    txt.innerHTML = `
+      <div style="font-weight:900;opacity:${t.done?0.55:1};text-decoration:${t.done?"line-through":"none"}">${escapeHtml(t.title)}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.62)">Prazo: ${escapeHtml(t.due || "—")}</div>
+    `;
+
+    const del = document.createElement("button");
+    del.className = "mini danger";
+    del.textContent = "Excluir";
+    del.addEventListener("click", ()=>{
+      state.tasks = state.tasks.filter(x=>x.id!==t.id);
+      saveState(); renderAll();
+    });
+
+    row.appendChild(chk);
+    row.appendChild(txt);
+    row.appendChild(del);
+    box.appendChild(row);
+  });
+}
+
+/* ---------- Charts (Canvas, no libs) ---------- */
+function clearCanvas(ctx,w,h){
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle = "rgba(0,0,0,0.10)";
+  ctx.fillRect(0,0,w,h);
+}
+function drawAxes(ctx,w,h,pad){
+  ctx.strokeStyle = "rgba(255,255,255,0.18)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad, pad);
+  ctx.lineTo(pad, h-pad);
+  ctx.lineTo(w-pad, h-pad);
+  ctx.stroke();
+  // grid
+  ctx.strokeStyle = "rgba(255,255,255,0.08)";
+  for(let i=0;i<5;i++){
+    const y = pad + (i*(h-pad*2)/4);
+    ctx.beginPath(); ctx.moveTo(pad,y); ctx.lineTo(w-pad,y); ctx.stroke();
+  }
+}
+function drawMultiLine(canvas, series, lines){
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height, pad = 42;
+  clearCanvas(ctx,w,h); drawAxes(ctx,w,h,pad);
+
+  const values = [];
+  series.forEach(p=>{
+    lines.forEach(L=>values.push(Number(p[L.key])||0));
+  });
+  const maxV = Math.max(1, ...values);
+  const minV = Math.min(0, ...values);
+  const xStep = (w-pad*2) / Math.max(1, series.length-1);
+  const yScale = (h-pad*2) / (maxV-minV || 1);
+
+  // x labels
+  ctx.fillStyle = "rgba(255,255,255,0.72)";
+  ctx.font = "12px " + getComputedStyle(document.body).fontFamily;
+  const stepLabel = Math.ceil(series.length/6);
+  for(let i=0;i<series.length;i+=stepLabel){
+    const x = pad + i*xStep;
+    ctx.fillText(series[i].label, x-18, h-16);
+  }
+
+  // lines
+  lines.forEach((L, idx)=>{
+    ctx.strokeStyle = L.color;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    series.forEach((p,i)=>{
+      const x = pad + i*xStep;
+      const y = (h-pad) - (((Number(p[L.key])||0)-minV)*yScale);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    // dots
+    ctx.fillStyle = L.color;
+    series.forEach((p,i)=>{
+      const x = pad + i*xStep;
+      const y = (h-pad) - (((Number(p[L.key])||0)-minV)*yScale);
+      ctx.beginPath(); ctx.arc(x,y,3,0,Math.PI*2); ctx.fill();
+    });
+
+    // legend
+    ctx.fillStyle = "rgba(255,255,255,0.82)";
+    ctx.fillText(L.label, pad + idx*150, 18);
+  });
+}
+
+function drawBars(canvas, items, title){
+  const ctx = canvas.getContext("2d");
+  const w = canvas.width, h = canvas.height, pad = 44;
+  clearCanvas(ctx,w,h); drawAxes(ctx,w,h,pad);
+
+  const vals = items.map(x=>Number(x.value)||0);
+  const maxV = Math.max(1, ...vals);
+  const barW = (w - pad*2) / Math.max(1, items.length) - 10;
+
+  ctx.fillStyle="rgba(255,255,255,0.78)";
+  ctx.font="12px " + getComputedStyle(document.body).fontFamily;
+  ctx.fillText(title||"", pad, 18);
+
+  items.forEach((it,i)=>{
+    const v = Number(it.value)||0;
+    const x = pad + i*(barW+10);
+    const bh = (h - pad*2) * (v/maxV);
+    const y = (h - pad) - bh;
+
+    const color = i%2===0 ? "rgba(59,130,246,0.90)" : "rgba(6,182,212,0.85)";
+    ctx.fillStyle = color;
+    roundRect(ctx, x, y, barW, bh, 10, true);
+
+    ctx.fillStyle = "rgba(255,255,255,0.80)";
+    const short = v >= 1000 ? (v/1000).toFixed(1) + "k" : v.toFixed(0);
+    ctx.fillText(short, x+4, y-6);
+
+    ctx.fillStyle = "rgba(255,255,255,0.70)";
+    const lab = String(it.label||"—").slice(0,12);
+    ctx.fillText(lab, x, h-16);
+  });
+}
+function roundRect(ctx, x, y, w, h, r, fill){
+  if (w < 2*r) r = w/2;
+  if (h < 2*r) r = h/2;
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y, x+w, y+h, r);
+  ctx.arcTo(x+w, y+h, x, y+h, r);
+  ctx.arcTo(x, y+h, x, y, r);
+  ctx.arcTo(x, y, x+w, y, r);
+  ctx.closePath();
+  if(fill) ctx.fill();
+}
+
+/* ---------- Print ---------- */
+function preparePrint(){
+  // ensure notes saved
+  state.notes = $("notesText").value || "";
+  saveState();
+
+  const range = $("filterRange").selectedOptions[0].textContent;
+  $("printMeta").textContent = `Gerado em ${new Date().toLocaleString("pt-BR")} • Período: ${range}`;
+
+  // compute metrics (same as dashboard current filter)
+  const rangeVal = $("filterRange").value;
+  const days = rangeVal==="all" ? null : Number(rangeVal);
+  const minDate = days ? dateAdd(todayISO(), -days) : null;
+
+  const cashF = state.cash.filter(c => !minDate || (c.date >= minDate));
+  const apptF = state.appts.filter(a => !minDate || (a.date >= minDate));
+
+  const rev = cashF.filter(c=>c.type==="in").reduce((s,c)=>s+num(c.value),0);
+  const exp = cashF.filter(c=>c.type==="out").reduce((s,c)=>s+num(c.value),0);
+  const profit = rev - exp;
+
+  const totalAppts = apptF.length;
+  const noShow = apptF.filter(a=>a.status==="faltou").length;
+  const noShowRate = totalAppts ? (noShow/totalAppts)*100 : 0;
+
+  const lowList = state.stock.filter(s=>num(s.qty)<=num(s.min));
+
+  $("pRev").textContent = money(rev);
+  $("pExp").textContent = money(exp);
+  $("pProfit").textContent = money(profit);
+  $("pLow").textContent = lowList.length + " itens";
+  $("pNoShow").textContent = noShowRate.toFixed(1) + "%";
+
+  // charts to img
+  $("imgLine").src = $("chartLine").toDataURL("image/png");
+  $("imgCats").src = $("chartCats").toDataURL("image/png");
+  $("imgPay").src = $("chartPay").toDataURL("image/png");
+
+  // cash last 20
+  const cashLast = cashF.slice().sort((a,b)=>(b.date||"").localeCompare(a.date||"")).slice(0,20);
+  $("printCash").innerHTML = cashLast.length ? tableHTML(
+    ["Data","Tipo","Valor","Forma","Categoria","Descrição"],
+    cashLast.map(c=>[
+      c.date, c.type==="in"?"Entrada":"Saída", money(c.value||0), c.pay||"", c.cat||"", c.desc||""
+    ])
+  ) : `<div style="color:#666;font-size:12px">Sem lançamentos no período.</div>`;
+
+  // low stock table
+  $("printLowStock").innerHTML = lowList.length ? tableHTML(
+    ["Material","Qtd","Mín","Categoria","Fornecedor"],
+    lowList.map(s=>[
+      s.name||"", String(s.qty??0), String(s.min??0), s.cat||"", s.supplier||""
+    ])
+  ) : `<div style="color:#666;font-size:12px">Sem itens abaixo do mínimo.</div>`;
+
+  // appts last 20
+  const apLast = apptF.slice().sort((a,b)=>((b.date||"")+(b.time||"")).localeCompare((a.date||"")+(a.time||""))).slice(0,20);
+  $("printAppts").innerHTML = apLast.length ? tableHTML(
+    ["Data/Hora","Paciente","Procedimento","Valor","Status","Obs"],
+    apLast.map(a=>[
+      `${a.date||""} ${a.time||""}`, a.patient||"", a.proc||"", money(a.value||0), a.status||"", a.obs||""
+    ])
+  ) : `<div style="color:#666;font-size:12px">Sem agenda no período.</div>`;
+
+  // notes/tasks
+  $("printNotes").textContent = state.notes || "(sem notas)";
+
+  if(!state.tasks.length){
+    $("printTasks").innerHTML = `<div style="color:#666;font-size:12px">(sem tarefas)</div>`;
+  } else {
+    $("printTasks").innerHTML = state.tasks.map(t=>{
+      const box = t.done ? "☑" : "☐";
+      const due = t.due ? ` • Prazo: ${escapeHtml(t.due)}` : "";
+      return `<div style="font-size:12px;color:#222;margin:4px 0">${box} <b>${escapeHtml(t.title)}</b><span style="color:#666">${due}</span></div>`;
+    }).join("");
+  }
+}
+function tableHTML(headers, rows){
+  const th = headers.map(h=>`<th>${escapeHtml(h)}</th>`).join("");
+  const tr = rows.map(r=>`<tr>${r.map(c=>`<td>${escapeHtml(c)}</td>`).join("")}</tr>`).join("");
+  return `<table class="tbl"><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table>`;
+}
+
+/* ---------- Backup / restore / wipe / csv ---------- */
+function backup(){
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `btx_backup_${todayISO()}.json`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function restore(){
+  const input = document.createElement("input");
+  input.type="file";
+  input.accept="application/json";
+  input.onchange = async ()=>{
+    const f = input.files?.[0];
+    if(!f) return;
+    const txt = await f.text();
+    try{
+      const obj = JSON.parse(txt);
+      if(!obj || typeof obj!=="object") throw new Error("inválido");
+      state.cash = obj.cash || [];
+      state.stock = obj.stock || [];
+      state.moves = obj.moves || [];
+      state.equip = obj.equip || [];
+      state.appts = obj.appts || [];
+      state.notes = obj.notes || "";
+      state.tasks = obj.tasks || [];
+      saveState();
+      $("notesText").value = state.notes;
+      refreshMoveSelect();
+      renderAll();
+      toast("Backup restaurado ✔️");
+    }catch{
+      alert("Arquivo inválido 😬");
+    }
+  };
+  input.click();
+}
+function wipe(){
+  if(!confirm("Tem certeza que quer zerar TUDO?")) return;
+  localStorage.removeItem(KEY);
+  location.reload();
+}
+function exportCSV(){
+  const rows = [
+    ["data","tipo","valor","forma","categoria","descricao"],
+    ...state.cash.map(c=>[c.date, c.type, c.value, c.pay, c.cat, c.desc].map(v=>String(v??"").replaceAll('"','""')))
+  ];
+  const csv = rows.map(r=>r.map(v=>`"${v}"`).join(";")).join("\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `btx_caixa_${todayISO()}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+/* ---------- Example seed ---------- */
+function seedExample(){
+  const d = todayISO();
+  // caixa
+  state.cash.unshift(
+    {id:uid(), type:"in", date:d, value:350, pay:"Pix", cat:"Procedimento", desc:"Restauração"},
+    {id:uid(), type:"in", date:d, value:600, pay:"Cartão", cat:"Procedimento", desc:"Exodontia"},
+    {id:uid(), type:"out", date:d, value:220, pay:"Pix", cat:"Material", desc:"Compra resina + ácido"},
+    {id:uid(), type:"out", date:d, value:350, pay:"Pix", cat:"Aluguel", desc:"Aluguel sala"},
+    {id:uid(), type:"out", date:d, value:110, pay:"Dinheiro", cat:"Operacional", desc:"Transporte/pequenas despesas"}
+  );
+  // estoque
+  const s1 = {id:uid(), name:"Resina A2", cat:"Resina", supplier:"Depósito X", qty:2, min:3, unit:25, obs:"", createdAt:Date.now()};
+  const s2 = {id:uid(), name:"Anestésico", cat:"Anestesia", supplier:"Depósito Y", qty:12, min:10, unit:9, obs:"", createdAt:Date.now()};
+  state.stock.unshift(s1,s2);
+  state.moves.unshift(
+    {id:uid(), stId:s1.id, date:d, type:"out", qty:1, cost:0, reason:"uso procedimento"},
+    {id:uid(), stId:s2.id, date:d, type:"in", qty:10, cost:90, reason:"compra"}
+  );
+  // agenda
+  state.appts.unshift(
+    {id:uid(), date:d, time:"09:00", patient:"Paciente Exemplo", pro:"Dr. Orlando", proc:"Restauração", value:350, status:"realizado", obs:"—"},
+    {id:uid(), date:d, time:"10:30", patient:"Paciente Exemplo 2", pro:"Dr. Orlando", proc:"Exodontia", value:600, status:"confirmado", obs:"Trazer exames"}
+  );
+  // equipamentos
+  state.equip.unshift(
+    {id:uid(), name:"Autoclave", buy:d, value:4800, last:dateAdd(d,-330), next:dateAdd(d,20), obs:"manutenção anual"},
+    {id:uid(), name:"Fotopolimerizador", buy:dateAdd(d,-120), value:650, last:"", next:"", obs:""}
+  );
+  // tarefas
+  state.tasks.unshift(
+    {id:uid(), title:"Reduzir faltas em 20%", due:"", done:false},
+    {id:uid(), title:"Comprar resina (estoque baixo)", due:"", done:false}
+  );
+  // notas
+  state.notes = "Objetivo do mês: aumentar ticket médio.\nO que falta: resina, fio de sutura.\nGastos altos: aluguel e material.\nPlano: confirmação WhatsApp + organização de compras.";
+  $("notesText").value = state.notes;
+
+  saveState();
+  refreshMoveSelect();
+  renderAll();
+  toast("Exemplo inserido ⚡");
+}
 </script>
-
 </body>
 </html>
