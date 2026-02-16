@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestão Clínica - Painel Evolução</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background: #f4f7fb;
+}
+
+header {
+    background: #0d47a1;
+    color: white;
+    padding: 15px;
+    text-align: center;
+    font-size: 20px;
+}
+
+.container {
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    padding: 15px;
+    margin-bottom: 20px;
+    border-radius: 12px;
+    box-shadow: 0px 3px 8px rgba(0,0,0,0.08);
+}
+
+input, textarea, button {
+    padding: 8px;
+    margin: 5px 0;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+}
+
+button {
+    background: #1565c0;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #0d47a1;
+}
+
+textarea {
+    width: 100%;
+    height: 120px;
+}
+</style>
+</head>
+<body>
+
+<header>Painel de Gestão Clínica</header>
+
+<div class="container" id="conteudoPDF">
+
+<div class="card">
+<h3>Registrar Entrada</h3>
+<input type="date" id="data">
+<input type="number" id="valor" placeholder="Valor">
+<button onclick="adicionarEntrada()">Adicionar</button>
+</div>
+
+<div class="card">
+<h3>Gráfico de Evolução</h3>
+<canvas id="grafico"></canvas>
+</div>
+
+<div class="card">
+<h3>Agenda</h3>
+<input type="date" id="agendaData">
+<input type="text" id="agendaTexto" placeholder="Descrição">
+<button onclick="adicionarAgenda()">Adicionar</button>
+<ul id="listaAgenda"></ul>
+</div>
+
+<div class="card">
+<h3>Bloco de Notas</h3>
+<textarea id="notas" placeholder="Anotações, metas, objetivos..."></textarea>
+<button onclick="salvarNotas()">Salvar Notas</button>
+</div>
+
+</div>
+
+<div style="padding:20px;">
+<button onclick="gerarPDF()">Gerar PDF</button>
+</div>
+
+<script>
+let entradas = JSON.parse(localStorage.getItem("entradas")) || [];
+let agenda = JSON.parse(localStorage.getItem("agenda")) || [];
+
+function salvarLocal() {
+    localStorage.setItem("entradas", JSON.stringify(entradas));
+    localStorage.setItem("agenda", JSON.stringify(agenda));
+}
+
+function adicionarEntrada() {
+    let data = document.getElementById("data").value;
+    let valor = parseFloat(document.getElementById("valor").value);
+    if(data && valor) {
+        entradas.push({data, valor});
+        salvarLocal();
+        atualizarGrafico();
+    }
+}
+
+function adicionarAgenda() {
+    let data = document.getElementById("agendaData").value;
+    let texto = document.getElementById("agendaTexto").value;
+    if(data && texto) {
+        agenda.push({data, texto});
+        salvarLocal();
+        renderAgenda();
+    }
+}
+
+function renderAgenda() {
+    let lista = document.getElementById("listaAgenda");
+    lista.innerHTML = "";
+    agenda.forEach(item => {
+        let li = document.createElement("li");
+        li.innerText = item.data + " - " + item.texto;
+        lista.appendChild(li);
+    });
+}
+
+function salvarNotas() {
+    localStorage.setItem("notas", document.getElementById("notas").value);
+}
+
+document.getElementById("notas").value = localStorage.getItem("notas") || "";
+
+let ctx = document.getElementById("grafico").getContext("2d");
+let grafico;
+
+function atualizarGrafico() {
+    let datas = entradas.map(e => e.data);
+    let valores = entradas.map(e => e.valor);
+
+    if(grafico) grafico.destroy();
+
+    grafico = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: datas,
+            datasets: [{
+                label: 'Faturamento',
+                data: valores,
+                borderColor: '#1565c0',
+                fill: false
+            }]
+        }
+    });
+}
+
+function gerarPDF() {
+    const elemento = document.getElementById("conteudoPDF");
+    html2pdf().from(elemento).save("relatorio_gestao.pdf");
+}
+
+renderAgenda();
+atualizarGrafico();
+</script>
+
+</body>
+</html>
